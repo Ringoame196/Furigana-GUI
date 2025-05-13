@@ -30,9 +30,27 @@ compose.desktop {
 		mainClass = "MainKt"
 
 		nativeDistributions {
-			targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+			targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.Deb)
 			packageName = "Furigana-GUI"
 			packageVersion = "1.0.0"
 		}
 	}
+}
+
+tasks.register<Jar>("fatJar") {
+	group = "build"
+	archiveClassifier.set("fat")
+
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+	manifest {
+		attributes["Main-Class"] = "MainKt"
+	}
+
+	from(sourceSets.main.get().output)
+
+	dependsOn(configurations.runtimeClasspath)
+	from({
+		configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+	})
 }
