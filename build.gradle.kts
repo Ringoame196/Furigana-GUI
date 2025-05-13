@@ -21,6 +21,8 @@ dependencies {
 	// (in a separate module for demo project and in testMain).
 	// With compose.desktop.common you will also lose @Preview functionality
 	implementation(compose.desktop.currentOs)
+	implementation("com.squareup.okhttp3:okhttp:4.9.3") // okhttp
+	implementation("org.json:json:20210307") // JSON処理ライブラリ
 }
 
 compose.desktop {
