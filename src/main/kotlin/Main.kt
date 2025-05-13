@@ -10,15 +10,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.util.*
+import manager.ConfigManager
+import manager.FuriganaManager
 
-val configFile = File("./data.properties")
+private val configManager = ConfigManager()
 
 @Composable
 @Preview
+
 fun App(
 	tokenText: String,
 	onTokenChange: (String) -> Unit,
@@ -126,14 +125,14 @@ fun main() = application {
 
 	// 起動時に読み込み
 	LaunchedEffect(Unit) {
-		val (token, grade) = loadConfig()
+		val (token, grade) = configManager.loadConfig()
 		tokenText = token
 		gradeParameter = grade.toIntOrNull()
 	}
 
 	Window(
 		onCloseRequest = {
-			saveConfig(tokenText, gradeParameter?.toString() ?: "")
+			configManager.saveConfig(tokenText, gradeParameter?.toString() ?: "")
 			exitApplication()
 		},
 		state = windowState,
@@ -161,24 +160,15 @@ fun convertToFurigana(text: String,token: String,gradeParameter: Int?): String {
 	if (token == "") return "Tokenを記入してください"
 	if (gradeParameter == null) return "学年を記入してください"
 
-	val furiganaManager = FuriganaManager(token,gradeParameter)
+	val furiganaManager = FuriganaManager(token, gradeParameter)
 
-	val response = furiganaManager.post(text)
-	return furiganaManager.formatFuriganaResponse(response ?: return "エラーが発生しました")
-}
-
-fun loadConfig(): Pair<String, String> {
-	if (!configFile.exists()) return "" to ""
-	val props = Properties().apply { load(FileInputStream(configFile)) }
-	val token = props.getProperty("token", "")
-	val grade = props.getProperty("gradeParameter", "")
-	return token to grade
-}
-
-fun saveConfig(token: String, gradeParameter: String) {
-	val props = Properties().apply {
-		setProperty("token", token)
-		setProperty("gradeParameter", gradeParameter)
+	// アーカイブ利用によりapiの削減を図る
+	if (Data.archives[text] == null) {
+		val response = furiganaManager.post(text)
+		val furigana = furiganaManager.formatFuriganaResponse(response ?: return "エラーが発生しました")
+		Data.archives[text] = furigana
+		return furigana
+	} else {
+		return Data.archives[text].toString()
 	}
-	FileOutputStream(configFile).use { props.store(it, "Furigana Tool Config") }
 }
