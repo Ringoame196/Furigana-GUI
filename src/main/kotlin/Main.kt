@@ -55,6 +55,13 @@ fun App() {
 				}
 
 				TextField(
+					value = gradeParameterText,
+					onValueChange = { gradeParameterText = it },
+					label = { Text("学年 ") },
+					modifier = Modifier.width(250.dp), // 横幅を少し調整
+				)
+
+				TextField(
 					value = tokenText,
 					onValueChange = { tokenText = it },
 					label = { Text("Token入力 ") },
@@ -67,16 +74,15 @@ fun App() {
 }
 
 // 仮のふりがな変換関数
-fun convertToFurigana(text: String,token: String): String {
-	return text.map {
-		when (it) {
-			'日' -> "にち"
-			'本' -> "ほん"
-			'語' -> "ご"
-			'人' -> "ひと"
-			else -> it.toString()
-		}
-	}.joinToString("")
+fun convertToFurigana(text: String,token: String,gradeParameter: Int?): String {
+	if (text == "") return ""
+	if (token == "") return "Tokenを記入してください"
+	if (gradeParameter == null) return "学年を記入してください"
+
+	val furiganaManager = FuriganaManager(token,gradeParameter)
+
+	val response = furiganaManager.post(text)
+	return furiganaManager.formatFuriganaResponse(response ?: return "エラーが発生しました")
 }
 
 
