@@ -9,13 +9,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.Properties
+
+val configFile = File("./data.properties")
 
 @Composable
 @Preview
 fun App() {
 	var inputText by remember { mutableStateOf("") }
 	var resultText by remember { mutableStateOf("") }
+	var gradeParameterText by remember { mutableStateOf("") }
 	var tokenText by remember { mutableStateOf("") }
+
+	// 起動時に読み込む
+	LaunchedEffect(Unit) {
+		val (token, gradeParameter) = loadConfig()
+		tokenText = token
+		gradeParameterText = gradeParameter
+	}
+
+	// 値変更時に保存（リアルタイム）
+	LaunchedEffect(tokenText, gradeParameterText) {
+		saveConfig(tokenText, gradeParameterText)
+	}
 
 	MaterialTheme {
 		Box(modifier = Modifier.fillMaxSize()) {
@@ -47,7 +66,7 @@ fun App() {
 
 				// ふりがなを付けるボタン
 				Button(onClick = {
-					resultText = convertToFurigana(inputText,tokenText)
+					resultText = convertToFurigana(inputText,tokenText,gradeParameterText.toIntOrNull())
 				},
 					modifier = Modifier.width(250.dp)
 				) {
@@ -85,11 +104,31 @@ fun convertToFurigana(text: String,token: String,gradeParameter: Int?): String {
 	return furiganaManager.formatFuriganaResponse(response ?: return "エラーが発生しました")
 }
 
+fun loadConfig(): Pair<String, String> {
+	if (!configFile.exists()) return "" to ""
+
+	val props = Properties().apply {
+		load(FileInputStream(configFile))
+	}
+
+	val token = props.getProperty("token", "")
+	val another = props.getProperty("gradeParameter", "")
+	return token to another
+}
+
+fun saveConfig(token: String, gradeParameter: String) {
+	val props = Properties().apply {
+		setProperty("token", token)
+		setProperty("gradeParameter", gradeParameter)
+	}
+	FileOutputStream(configFile).use { props.store(it, "Furigana Tool Config") }
+}
+
 
 fun main() = application {
 	val windowState = rememberWindowState(
 		width = 300.dp,
-		height = 380.dp,
+		height = 420.dp,
 	)
 
 	Window(
